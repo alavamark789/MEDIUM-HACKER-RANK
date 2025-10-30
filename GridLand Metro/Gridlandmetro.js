@@ -1,0 +1,79 @@
+'use strict';
+
+const fs = require('fs');
+
+process.stdin.resume();
+process.stdin.setEncoding('utf-8');
+
+let inputString = '';
+let currentLine = 0;
+
+process.stdin.on('data', inputStdin => {
+    inputString += inputStdin;
+});
+
+process.stdin.on('end', () => {
+    inputString = inputString.split('\n');
+    main();
+});
+
+function readLine() {
+    return inputString[currentLine++];
+}
+
+function gridlandMetro(n, m, k, track) {
+    // Map to store all tracks for each row
+    const rowMap = new Map();
+
+    for (let [r, c1, c2] of track) {
+        if (!rowMap.has(r)) rowMap.set(r, []);
+        rowMap.get(r).push([Math.min(c1, c2), Math.max(c1, c2)]);
+    }
+
+    let totalOccupied = 0;
+
+    for (let segments of rowMap.values()) {
+        // Sort intervals by start column
+        segments.sort((a, b) => a[0] - b[0]);
+
+        let merged = [];
+        for (let [start, end] of segments) {
+            if (merged.length === 0) {
+                merged.push([start, end]);
+            } else {
+                let last = merged[merged.length - 1];
+                if (start <= last[1]) {
+                    // Overlap detected, merge intervals
+                    last[1] = Math.max(last[1], end);
+                } else {
+                    merged.push([start, end]);
+                }
+            }
+        }
+
+        // Count occupied cells for this row
+        for (let [start, end] of merged) {
+            totalOccupied += end - start + 1;
+        }
+    }
+
+    return n * m - totalOccupied;
+}
+
+function main() {
+    const ws = fs.createWriteStream(process.env.OUTPUT_PATH || '/dev/stdout');
+
+    const firstMultipleInput = readLine().replace(/\s+$/g, '').split(' ');
+    const n = parseInt(firstMultipleInput[0], 10);
+    const m = parseInt(firstMultipleInput[1], 10);
+    const k = parseInt(firstMultipleInput[2], 10);
+
+    let track = Array(k);
+    for (let i = 0; i < k; i++) {
+        track[i] = readLine().replace(/\s+$/g, '').split(' ').map(Number);
+    }
+
+    const result = gridlandMetro(n, m, k, track);
+    ws.write(result + '\n');
+    ws.end();
+}
